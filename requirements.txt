@@ -1,0 +1,9 @@
+openai
+python-dotenv
+sounddevice
+soundfile
+numpy
+pydub
+edge-tts
+faster-whisper
+simpleaudio
