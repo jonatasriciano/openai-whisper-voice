@@ -1,8 +1,12 @@
-from config.settings import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from app.core.config import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
 import time
 import wave
 import numpy as np
 from faster_whisper import WhisperModel
+from app.utils.debug import log_step
 
 """
 Handles transcription of recorded audio using a local Whisper model.
@@ -26,33 +30,37 @@ def transcribe_with_whisper(filepath: str) -> str:
         frames = wf.readframes(wf.getnframes())
         samples = np.frombuffer(frames, dtype=np.int16)
         if samples.size == 0:
-            print("⚠️ No audio samples found in input file.")
+            log_step("⚠️ No audio samples found in input file.")
             return "[unrecognized audio]"
         rms = np.sqrt(np.mean(samples.astype(np.float32) ** 2))
         if np.isnan(rms):
             rms = 0.0
-        print(f"🔍 Input audio RMS level: {rms:.2f}")
+        log_step(f"🔍 Input audio RMS level: {rms:.2f}")
         if rms < 50:
-            print("⚠️ Audio volume is too low. Check microphone or environment.")
+            log_step("⚠️ Audio volume is too low. Check microphone or environment.")
 
-    print("📡 Transcribing audio using local Whisper model...")
+    log_step("📡 Transcribing audio using local Whisper model...")
     start_time = time.time()
-    segments, info = model.transcribe(
-        filepath,
-        beam_size=WHISPER_BEAM_SIZE,
-        language=WHISPER_LANGUAGE,
-        vad_filter=False,
-        vad_parameters={"threshold": 0.2}
-    )
+    try:
+        segments, info = model.transcribe(
+            filepath,
+            beam_size=WHISPER_BEAM_SIZE,
+            language=WHISPER_LANGUAGE,
+            vad_filter=False,
+            vad_parameters={"threshold": 0.2}
+        )
+    except Exception as e:
+        log_step(f"❌ Transcription error: {e}")
+        return "[transcription failed]"
 
     transcription = "".join([segment.text for segment in segments])
     elapsed = time.time() - start_time
 
     if not transcription.strip():
-        print("⚠️ Nothing was transcribed. Audio may be empty or unintelligible.")
+        log_step("⚠️ Nothing was transcribed. Audio may be empty or unintelligible.")
         return "[unrecognized audio]"
 
-    print(f"⏱️ Transcription took {elapsed:.2f} seconds")
-    print("📝 You said:", transcription.strip())
+    log_step(f"⏱️ Transcription took {elapsed:.2f} seconds")
+    log_step("📝 You said: " + transcription.strip())
 
     return transcription.strip()
