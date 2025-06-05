@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import os
 import time
 import wave
@@ -9,6 +7,9 @@ import sounddevice as sd
 import soundfile as sf
 import datetime
 import logging
+from dotenv import load_dotenv
+from pydub import AudioSegment
+load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 
 def log_step(message):
@@ -17,6 +18,12 @@ def log_step(message):
 log_step("🎬 Recorder initialized")
 
 from app.core.config import SAMPLE_RATE, BLOCKSIZE, SILENCE_TIMEOUT, OUTPUT_FILE, CHANNELS, MIC_DEVICE
+
+MIC_DEVICE = None
+def initialize_device():
+    global MIC_DEVICE
+    MIC_DEVICE = auto_select_input_device()
+    return sd.query_devices(MIC_DEVICE, 'input')
 
 def auto_select_input_device():
     devices = sd.query_devices()
@@ -110,6 +117,7 @@ def record_audio(channels=None, mic_device=None):
         audio_data = np.concatenate(frames)
         sf.write(OUTPUT_FILE, audio_data, SAMPLE_RATE)
         log_step(f"✅ Audio file written to {OUTPUT_FILE}, length: {len(audio_data) / SAMPLE_RATE:.2f}s")
+
         log_step("Validating if audio is silent")
         if is_audio_file_silent(OUTPUT_FILE) and channels == 1:
             info = sd.query_devices(mic_device, 'input')

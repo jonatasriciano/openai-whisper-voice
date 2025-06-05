@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 """
 Handles interaction with the OpenAI assistant and speech output using edge-tts.
 """
@@ -36,8 +33,13 @@ async def respond_and_speak(user_text: str):
         print("⚠️ Empty input. Skipping response.")
         return
 
+    # Timer for total spoken response delay
+    import time
+    start_time_total = time.time()
+
     log_step("Calling OpenAI API for response")
     print("🧠 Generating response...")
+    # Update chat_history exactly as in index.py (append user before request)
     chat_history.append({"role": "user", "content": user_text})
 
     response = openai.chat.completions.create(
@@ -52,6 +54,7 @@ async def respond_and_speak(user_text: str):
     if len(assistant_text) > MAX_CHARACTERS:
         assistant_text = assistant_text[:MAX_CHARACTERS].rsplit(".", 1)[0] + "."
 
+    # Append assistant response to chat_history
     chat_history.append({"role": "assistant", "content": assistant_text})
     print("🤖 Assistant:", assistant_text)
 
@@ -61,6 +64,13 @@ async def respond_and_speak(user_text: str):
         await speak_with_edge_tts(assistant_text)
     except aiohttp.ClientConnectionError as e:
         print(f"🔌 TTS connection failed: {e}. Skipping speech output.")
+
+    elapsed_total = time.time() - start_time_total
+    # Print the spoken response delay after TTS completes
+    print(f"⚡️ Spoken Response Delay (TTS only): {elapsed_total:.2f}s")
+
+    # Move the print to the end
+    print("🎤 Awaiting user input...")
 
 async def speak_with_edge_tts(text: str):
     """
@@ -72,7 +82,7 @@ async def speak_with_edge_tts(text: str):
     log_step("Generating TTS audio file")
     output_path = "audio/edge_output.mp3"
     wav_output_path = "audio/edge_output.wav"
-    communicate = edge_tts.Communicate(text, voice="en-US-AriaNeural")
+    communicate = edge_tts.Communicate(text, voice="en-CA-ClaraNeural")
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         log_step(f"Attempting TTS generation, try {attempt}")

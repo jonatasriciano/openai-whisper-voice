@@ -1,18 +1,16 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import os
 import shutil
 from datetime import datetime
 
+from app.core.config import OUTPUT_FILE
+from app.modules.audio_utils import play_beep
+from app.modules.interruptible_tts import play_audio_interruptible
+from app.modules.recorder import record_audio
+from app.modules.responder import respond_and_speak
+from app.modules.transcriber import transcribe_with_whisper
+
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
-from app.modules.recorder import record_audio
-from app.modules.transcriber import transcribe_with_whisper
-from app.modules.responder import respond_and_speak, respond_with_text, speak_with_edge_tts
-from app.core.config import OUTPUT_FILE
-from app.modules.interruptible_tts import play_audio_interruptible
-from app.modules.audio_utils import play_beep
 
 
 async def start_conversation():
@@ -20,46 +18,20 @@ async def start_conversation():
     await respond_and_speak("Hello! I'm listening. You can start speaking.")
     try:
         while True:
-            start = datetime.now()
             audio_success = record_audio()
-            print(f"⏱️ Step record_audio took {(datetime.now() - start).total_seconds()} seconds")
-            if not audio_success:
-                print("⚠️ Audio recording failed.")
+            if not audio_success or not os.path.exists(OUTPUT_FILE):
+                print("⚠️ Audio recording failed or file not found.")
                 continue
-            if not os.path.exists(OUTPUT_FILE):
-                print("❌ Audio file not found. Check microphone or save logic.")
-                continue
-            start = datetime.now()
+
             user_input = transcribe_with_whisper(OUTPUT_FILE)
-            print(f"⏱️ Step transcribe_with_whisper took {(datetime.now() - start).total_seconds()} seconds")
+            await respond_and_speak(user_input)
 
-            start = datetime.now()
-            assistant_text = respond_with_text(user_input)
-            print(f"⏱️ Step respond_with_text took {(datetime.now() - start).total_seconds()} seconds")
-
-            start = datetime.now()
-            audio_path = await speak_with_edge_tts(assistant_text)
-            print(f"⏱️ Step speak_with_edge_tts took {(datetime.now() - start).total_seconds()} seconds")
-
-            if audio_path:
-                start = datetime.now()
-                interrupted = play_audio_interruptible(audio_path)
-                print(f"⏱️ Step play_audio_interruptible took {(datetime.now() - start).total_seconds()} seconds")
-                if interrupted:
-                    print("⏹️ Assistant interrupted by user speech.")
-                    play_beep()
-                    continue  # Resume listening immediately
-            else:
-                print("❌ Skipping playback due to TTS failure.")
-            start = datetime.now()
+            # Logging
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             input_log_path = os.path.join(LOG_DIR, f"user_{timestamp}.wav")
             output_log_path = os.path.join(LOG_DIR, f"bot_{timestamp}.mp3")
-
-            # Save copies of audio files
             shutil.copyfile(OUTPUT_FILE, input_log_path)
-            shutil.copyfile(audio_path, output_log_path)
-            print(f"⏱️ Step saving logs took {(datetime.now() - start).total_seconds()} seconds")
+            shutil.copyfile("audio/edge_output.mp3", output_log_path)
             print("\n--- Next Turn ---\n")
     except KeyboardInterrupt:
         print("\n👋 Conversation terminated by user.")

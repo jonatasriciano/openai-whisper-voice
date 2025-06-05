@@ -1,12 +1,9 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import datetime
+import asyncio
+from app.core.conversation import start_conversation
 
 def log_step(message):
     print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
-import asyncio
-from app.core.conversation import start_conversation
 if __name__ == "__main__":
     try:
         log_step("Launching start_conversation with asyncio")

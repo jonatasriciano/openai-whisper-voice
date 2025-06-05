@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from dotenv import load_dotenv
+load_dotenv()
 from app.core.config import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
 import time
 import wave
@@ -49,18 +50,19 @@ def transcribe_with_whisper(filepath: str) -> str:
             vad_filter=False,
             vad_parameters={"threshold": 0.2}
         )
+        transcription = "".join([segment.text for segment in segments])
     except Exception as e:
         log_step(f"❌ Transcription error: {e}")
         return "[transcription failed]"
 
-    transcription = "".join([segment.text for segment in segments])
+    transcription = transcription.strip()
     elapsed = time.time() - start_time
 
-    if not transcription.strip():
+    if not transcription:
         log_step("⚠️ Nothing was transcribed. Audio may be empty or unintelligible.")
         return "[unrecognized audio]"
 
     log_step(f"⏱️ Transcription took {elapsed:.2f} seconds")
-    log_step("📝 You said: " + transcription.strip())
+    log_step("📝 You said: " + transcription)
 
-    return transcription.strip()
+    return transcription

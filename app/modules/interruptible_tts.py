@@ -1,16 +1,10 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import datetime
-
-def log_step(message):
-    print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
-
-import threading
-import sounddevice as sd
 import numpy as np
-import time
+import os
 import simpleaudio as sa
+import sounddevice as sd
+import threading
+import time
 
 from app.core.config import INTERRUPTION_THRESHOLD, CHUNK_DURATION, INTERRUPTION_TIMEOUT
 
