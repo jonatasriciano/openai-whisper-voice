@@ -2,7 +2,7 @@ import sys
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from app.core.config import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
+from app.config.settings import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
 import time
 import wave
 import numpy as np

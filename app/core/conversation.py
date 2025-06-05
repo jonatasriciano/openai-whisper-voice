@@ -2,7 +2,7 @@ import os
 import shutil
 from datetime import datetime
 
-from app.core.config import OUTPUT_FILE
+from app.config.settings import OUTPUT_FILE
 from app.modules.audio_utils import play_beep
 from app.modules.interruptible_tts import play_audio_interruptible
 from app.modules.recorder import record_audio

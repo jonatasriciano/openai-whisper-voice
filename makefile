@@ -2,8 +2,7 @@
 
 # Run the assistant locally
 run:
-	. venv/bin/activate && python app/main.py
-
+	PYTHONPATH=. ./venv/bin/python app/main.py
 # Create a virtual environment and install dependencies
 init:
 	rm -rf venv && python -m venv venv && . venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt

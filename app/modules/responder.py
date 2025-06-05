@@ -12,7 +12,7 @@ def log_step(message):
     print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
 
 # Import OpenAI client, assistant ID, and initial chat history from settings
-from app.core.config import openai, ASSISTANT_ID, INITIAL_CHAT_HISTORY, MAX_CHARACTERS
+from app.config.settings import openai, ASSISTANT_ID, INITIAL_CHAT_HISTORY, MAX_CHARACTERS
 
 # Suppress asyncio coroutine warnings
 import warnings

@@ -17,7 +17,7 @@ def log_step(message):
 
 log_step("🎬 Recorder initialized")
 
-from app.core.config import SAMPLE_RATE, BLOCKSIZE, SILENCE_TIMEOUT, OUTPUT_FILE, CHANNELS, MIC_DEVICE
+from app.config.settings import SAMPLE_RATE, BLOCKSIZE, SILENCE_TIMEOUT, OUTPUT_FILE, CHANNELS, MIC_DEVICE
 
 MIC_DEVICE = None
 def initialize_device():

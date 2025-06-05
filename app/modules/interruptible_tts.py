@@ -6,7 +6,7 @@ import sounddevice as sd
 import threading
 import time
 
-from app.core.config import INTERRUPTION_THRESHOLD, CHUNK_DURATION, INTERRUPTION_TIMEOUT
+from app.config.settings import INTERRUPTION_THRESHOLD, CHUNK_DURATION, INTERRUPTION_TIMEOUT
 
 """
 Handles audio playback and allows user interruption by speaking over it.
