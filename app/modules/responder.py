@@ -1,6 +1,4 @@
-"""
-Handles interaction with the OpenAI assistant and speech output using edge-tts.
-"""
+"""Handles interaction with the OpenAI assistant and speech output using edge-tts."""
 import asyncio
 import numpy as np
 import sounddevice as sd
@@ -8,6 +6,7 @@ from pydub import AudioSegment
 import edge_tts
 import aiohttp
 import datetime
+import simpleaudio as sa
 def log_step(message):
     print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
 
@@ -119,7 +118,15 @@ async def speak_with_edge_tts(text: str):
         sd.play(samples, samplerate=audio.frame_rate)
         sd.wait()
     except Exception as e:
-        log_step(f"❌ Playback error: {e}")
+        log_step(f"❌ Playback error with sounddevice: {e}")
+        try:
+            log_step("▶️ Trying fallback playback with simpleaudio")
+            play_obj = sa.play_buffer(audio.raw_data, num_channels=audio.channels,
+                                      bytes_per_sample=audio.sample_width,
+                                      sample_rate=audio.frame_rate)
+            play_obj.wait_done()
+        except Exception as fallback_error:
+            log_step(f"❌ Fallback playback also failed: {fallback_error}")
     log_step("Releasing sounddevice resources and sleeping briefly to avoid segfault")
     sd.stop()
     await asyncio.sleep(0.1)
