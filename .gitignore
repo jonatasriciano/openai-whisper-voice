@@ -13,3 +13,5 @@ audio/
 
 # System files
 .DS_Store
+
+logs/

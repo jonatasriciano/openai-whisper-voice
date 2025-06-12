@@ -13,8 +13,8 @@ LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 
-async def start_conversation():
-    print("🤖 Voice Assistant is ready. Speak naturally. Press Ctrl+C to stop.\n")
+async def main_loop():
+    print("🧠 Voice assistant is now running in continuous mode. Speak naturally. Press Ctrl+C to exit.\n")
     await respond_and_speak("Hello! I'm listening. You can start speaking.")
     try:
         while True:
@@ -24,6 +24,9 @@ async def start_conversation():
                 continue
 
             user_input = transcribe_with_whisper(OUTPUT_FILE)
+            if not user_input.strip():
+                print("⚠️ No speech detected in recording.")
+                continue
             await respond_and_speak(user_input)
 
             # Logging

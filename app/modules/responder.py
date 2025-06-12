@@ -11,7 +11,7 @@ def log_step(message):
     print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
 
 # Import OpenAI client, assistant ID, and initial chat history from settings
-from app.config.settings import openai, ASSISTANT_ID, INITIAL_CHAT_HISTORY, MAX_CHARACTERS
+from app.config.settings import openai, ASSISTANT_ID, INITIAL_CHAT_HISTORY, MAX_CHARACTERS, TTS_PROVIDER, ELEVEN_API_KEY, ELEVEN_VOICE_ID
 
 # Suppress asyncio coroutine warnings
 import warnings
@@ -37,7 +37,6 @@ async def respond_and_speak(user_text: str):
     start_time_total = time.time()
 
     log_step("Calling OpenAI API for response")
-    print("🧠 Generating response...")
     # Update chat_history exactly as in index.py (append user before request)
     chat_history.append({"role": "user", "content": user_text})
 
@@ -55,12 +54,15 @@ async def respond_and_speak(user_text: str):
 
     # Append assistant response to chat_history
     chat_history.append({"role": "assistant", "content": assistant_text})
-    print("🤖 Assistant:", assistant_text)
+    log_step(f"🤖 Assistant: {assistant_text}")
 
-    log_step("Sending text to edge-tts")
-    # Speak using edge-tts
+    log_step("Sending text to TTS provider")
+    # Speak using selected TTS provider
     try:
-        await speak_with_edge_tts(assistant_text)
+        if TTS_PROVIDER == "elevenlabs":
+            await speak_with_elevenlabs(assistant_text)
+        else:
+            await speak_with_edge_tts(assistant_text)
     except aiohttp.ClientConnectionError as e:
         print(f"🔌 TTS connection failed: {e}. Skipping speech output.")
 
@@ -152,10 +154,73 @@ def respond_with_text(user_input: str) -> str:
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=chat_history,
-        temperature=0.4,
+        temperature=0.7,
     )
     log_step("Text-only response received")
 
     assistant_text = response.choices[0].message.content.strip()
     chat_history.append({"role": "assistant", "content": assistant_text})
     return assistant_text
+
+async def speak_with_elevenlabs(text: str):
+    import requests
+    import tempfile
+
+    log_step("🔊 Using ElevenLabs TTS")
+    if not ELEVEN_API_KEY:
+        print("❌ ELEVEN_API_KEY is missing. Cannot use ElevenLabs TTS.")
+        return
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVEN_VOICE_ID}"
+    headers = {
+        "xi-api-key": ELEVEN_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    # Removed debug prints for API response and response size
+    if response.status_code != 200:
+        log_step(f"❌ ElevenLabs TTS failed: {response.status_code} {response.text}")
+        return
+
+    mp3_path = "audio/eleven_output.mp3"
+    wav_path = "audio/edge_output.wav"
+    with open(mp3_path, "wb") as f:
+        f.write(response.content)
+    log_step("✅ ElevenLabs MP3 file saved.")
+
+    # Convert MP3 to WAV
+    audio = AudioSegment.from_file(mp3_path, format="mp3")
+    audio.export(wav_path, format="wav")
+    log_step("🎛 MP3 converted to WAV successfully.")
+
+    # Play the result using the existing logic
+    audio = AudioSegment.from_file(wav_path, format="wav")
+    samples = np.array(audio.get_array_of_samples()).astype(np.float32) / np.power(2, 15)
+    if audio.channels == 2:
+        samples = samples.reshape((-1, 2))
+
+    log_step("Playing ElevenLabs audio with sounddevice")
+    try:
+        sd.play(samples, samplerate=audio.frame_rate)
+        sd.wait()
+    except Exception as e:
+        log_step(f"❌ Playback error with sounddevice: {e}")
+        try:
+            log_step("▶️ Trying fallback playback with simpleaudio")
+            play_obj = sa.play_buffer(audio.raw_data, num_channels=audio.channels,
+                                      bytes_per_sample=audio.sample_width,
+                                      sample_rate=audio.frame_rate)
+            play_obj.wait_done()
+        except Exception as fallback_error:
+            log_step(f"❌ Fallback playback also failed: {fallback_error}")
+    sd.stop()
+    await asyncio.sleep(0.1)

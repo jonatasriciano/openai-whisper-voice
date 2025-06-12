@@ -6,7 +6,7 @@ import sounddevice as sd
 import threading
 import time
 
-from app.config.settings import INTERRUPTION_THRESHOLD, CHUNK_DURATION, INTERRUPTION_TIMEOUT
+from app.config.settings import INTERRUPTION_THRESHOLD, CHUNK_DURATION, INTERRUPTION_TIMEOUT, DEBUG_INTERRUPTION
 
 """
 Handles audio playback and allows user interruption by speaking over it.
@@ -43,8 +43,10 @@ class AudioInterrupter:
         log_step("Starting microphone monitoring")
         def callback(indata, frames, time_, status):
             if status:
-                print(f"⚠️ Mic status: {status}")
+                log_step(f"⚠️ Mic status: {status}")
             rms = np.sqrt(np.mean(indata**2)) * 1000
+            if DEBUG_INTERRUPTION:
+                log_step(f"🔊 RMS: {rms:.2f}")
             if rms > INTERRUPTION_THRESHOLD:
                 self.interrupted = True
                 log_step("Voice interruption detected")

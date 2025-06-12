@@ -59,12 +59,10 @@ def record_audio(channels=None, mic_device=None):
         bool: True if recording successful and non-silent, False otherwise.
     """
     log_step("🧪 Entering record_audio function")
-    log_step("Starting audio recording")
     if channels is None:
         channels = CHANNELS
     if mic_device is None:
         mic_device = MIC_DEVICE
-    print("🎙️ Recording... Speak naturally.")
     q = queue.Queue()
     silence_threshold = 0.007
     silence_duration = SILENCE_TIMEOUT
@@ -107,12 +105,11 @@ def record_audio(channels=None, mic_device=None):
                 if silence_start_time is not None and (time.time() - silence_start_time > SILENCE_TIMEOUT):
                     elapsed_silence = time.time() - silence_start_time
                     log_step(f"Elapsed silence: {elapsed_silence:.2f}s (threshold: {SILENCE_TIMEOUT}s)")
-                    print("🔇 Silence detected. Stopping.")
+                    log_step("🔇 Silence threshold reached. Ending capture.")
                     log_step("Silence timeout reached, stopping recording")
                     break
         if not frames:
             log_step("❌ No audio frames captured. Aborting recording.")
-            log_step("🏁 Exiting record_audio function")
             return False
         audio_data = np.concatenate(frames)
         sf.write(OUTPUT_FILE, audio_data, SAMPLE_RATE)
@@ -123,27 +120,18 @@ def record_audio(channels=None, mic_device=None):
             info = sd.query_devices(mic_device, 'input')
             if info['max_input_channels'] >= 2:
                 log_step("Retrying in stereo mode")
-                print("🔄 Retrying in stereo...")
-                log_step("🏁 Exiting record_audio function")
                 return record_audio(channels=2, mic_device=mic_device)
             else:
-                print("❌ Stereo not supported.")
                 log_step("Finished audio recording")
-                log_step("🏁 Exiting record_audio function")
                 return False
         elif is_audio_file_silent(OUTPUT_FILE) and channels == 2:
-            print("❌ Silent audio in stereo. Check your mic.")
             log_step("Finished audio recording")
-            log_step("🏁 Exiting record_audio function")
             return False
         else:
             log_step("Finished audio recording")
-            log_step("🏁 Exiting record_audio function")
             return True
     except KeyboardInterrupt:
-        print("🛑 Interrupted.")
         log_step("Finished audio recording")
-        log_step("🏁 Exiting record_audio function")
         return False
     finally:
         log_step("🔧 Cleaning up sounddevice stream")
@@ -166,3 +154,6 @@ def is_audio_file_silent(path):
         log_step(f"📊 Audio RMS calculated: {rms:.2f}")
         log_step("Silent check completed")
         return rms < 10
+
+if __name__ == "__main__":
+    record_audio()

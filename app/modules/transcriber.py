@@ -1,5 +1,3 @@
-import sys
-import os
 from dotenv import load_dotenv
 load_dotenv()
 from app.config.settings import WHISPER_MODEL_NAME, WHISPER_COMPUTE_TYPE, WHISPER_LANGUAGE, WHISPER_BEAM_SIZE
@@ -36,9 +34,10 @@ def transcribe_with_whisper(filepath: str) -> str:
         rms = np.sqrt(np.mean(samples.astype(np.float32) ** 2))
         if np.isnan(rms):
             rms = 0.0
-        log_step(f"🔍 Input audio RMS level: {rms:.2f}")
+        log_step("📥 Audio input detected.")
         if rms < 50:
-            log_step("⚠️ Audio volume is too low. Check microphone or environment.")
+            log_step("⚠️ Audio too quiet. Skipping transcription.")
+            return "[unrecognized audio]"
 
     log_step("📡 Transcribing audio using local Whisper model...")
     start_time = time.time()
@@ -47,7 +46,7 @@ def transcribe_with_whisper(filepath: str) -> str:
             filepath,
             beam_size=WHISPER_BEAM_SIZE,
             language=WHISPER_LANGUAGE,
-            vad_filter=False,
+            vad_filter=True,
             vad_parameters={"threshold": 0.2}
         )
         transcription = "".join([segment.text for segment in segments])
