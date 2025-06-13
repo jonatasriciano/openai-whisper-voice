@@ -10,7 +10,7 @@ import logging
 from dotenv import load_dotenv
 from pydub import AudioSegment
 load_dotenv()
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 def log_step(message):
     print(f"🕒 [{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
@@ -76,50 +76,49 @@ def record_audio(channels=None, mic_device=None):
     def callback(indata, frames_count, time_info, status):
         nonlocal silence_start_time
         if indata is None or len(indata) == 0:
-            log_step("⚠️ Empty audio block received")
+            # log_step("⚠️ Empty audio block received")
             return
         q.put(indata.copy())
         normalized = indata.astype(np.float32) / 32768.0
         rms = np.sqrt(np.mean(np.square(normalized)))
-        log_step(f"Block RMS: {rms:.6f}")
+        # if rms > 0.01:
+        #     log_step(f"Block RMS: {rms:.6f}")
         if np.isnan(rms):
             rms = 0.0
         if rms < silence_threshold:
             if silence_start_time is None:
                 silence_start_time = time.time()
-                log_step("🔇 Detected silence start")
-            else:
-                log_step(f"🔇 Continuing silence... elapsed: {time.time() - silence_start_time:.2f}s")
+                # log_step("🔇 Detected silence start")
         else:
             if silence_start_time is not None:
                 log_step(f"🎙️ Voice resumed after {time.time() - silence_start_time:.2f}s of silence")
             silence_start_time = None
 
     try:
-        log_step("Opening sounddevice InputStream")
+        # log_step("Opening sounddevice InputStream")
         with sd.InputStream(callback=callback, channels=channels, samplerate=SAMPLE_RATE, dtype='int16', device=mic_device, blocksize=BLOCKSIZE):
             for i in range(max_blocks):
                 block = q.get()
                 frames.append(block)
-                log_step(f"Captured audio block {i+1}")
+                # log_step(f"Captured audio block {i+1}")
                 if silence_start_time is not None and (time.time() - silence_start_time > SILENCE_TIMEOUT):
-                    elapsed_silence = time.time() - silence_start_time
-                    log_step(f"Elapsed silence: {elapsed_silence:.2f}s (threshold: {SILENCE_TIMEOUT}s)")
+                    # elapsed_silence = time.time() - silence_start_time
+                    # log_step(f"Elapsed silence: {elapsed_silence:.2f}s (threshold: {SILENCE_TIMEOUT}s)")
                     log_step("🔇 Silence threshold reached. Ending capture.")
-                    log_step("Silence timeout reached, stopping recording")
+                    # log_step("Silence timeout reached, stopping recording")
                     break
         if not frames:
-            log_step("❌ No audio frames captured. Aborting recording.")
+            # log_step("❌ No audio frames captured. Aborting recording.")
             return False
         audio_data = np.concatenate(frames)
         sf.write(OUTPUT_FILE, audio_data, SAMPLE_RATE)
         log_step(f"✅ Audio file written to {OUTPUT_FILE}, length: {len(audio_data) / SAMPLE_RATE:.2f}s")
 
-        log_step("Validating if audio is silent")
+        # log_step("Validating if audio is silent")
         if is_audio_file_silent(OUTPUT_FILE) and channels == 1:
             info = sd.query_devices(mic_device, 'input')
             if info['max_input_channels'] >= 2:
-                log_step("Retrying in stereo mode")
+                # log_step("Retrying in stereo mode")
                 return record_audio(channels=2, mic_device=mic_device)
             else:
                 log_step("Finished audio recording")
@@ -134,25 +133,26 @@ def record_audio(channels=None, mic_device=None):
         log_step("Finished audio recording")
         return False
     finally:
-        log_step("🔧 Cleaning up sounddevice stream")
+        # log_step("🔧 Cleaning up sounddevice stream")
         try:
             current_stream = sd.get_stream()
             if current_stream and current_stream.active:
                 current_stream.stop()
         except Exception as e:
-            log_step(f"⚠️ Error stopping stream: {e}")
+            # log_step(f"⚠️ Error stopping stream: {e}")
+            pass
 
 def is_audio_file_silent(path):
-    log_step(f"Checking if audio file {path} is silent")
+    # log_step(f"Checking if audio file {path} is silent")
     with wave.open(path, 'rb') as wf:
         frames = wf.readframes(wf.getnframes())
         samples = np.frombuffer(frames, dtype=np.int16)
         if samples.size == 0:
-            log_step("Silent check completed")
+            # log_step("Silent check completed")
             return True
         rms = np.sqrt(np.mean(samples.astype(np.float32) ** 2))
-        log_step(f"📊 Audio RMS calculated: {rms:.2f}")
-        log_step("Silent check completed")
+        # log_step(f"📊 Audio RMS calculated: {rms:.2f}")
+        # log_step("Silent check completed")
         return rms < 10
 
 if __name__ == "__main__":

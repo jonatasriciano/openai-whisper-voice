@@ -23,22 +23,37 @@ async def main_loop():
                 print("⚠️ Audio recording failed or file not found.")
                 continue
 
-            user_input = transcribe_with_whisper(OUTPUT_FILE)
+            try:
+                user_input = transcribe_with_whisper(OUTPUT_FILE)
+            except Exception as e:
+                print(f"❌ Transcription error: {e}")
+                continue
+
             if not user_input.strip():
                 print("⚠️ No speech detected in recording.")
                 continue
-            await respond_and_speak(user_input)
 
-            # Logging
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            input_log_path = os.path.join(LOG_DIR, f"user_{timestamp}.wav")
-            output_log_path = os.path.join(LOG_DIR, f"bot_{timestamp}.mp3")
-            shutil.copyfile(OUTPUT_FILE, input_log_path)
-            shutil.copyfile("audio/edge_output.mp3", output_log_path)
+            print(f"👤 You said: {user_input}")
+            try:
+                await respond_and_speak(user_input)
+            except Exception as e:
+                print(f"❌ Response error: {e}")
+                continue
+
+            save_conversation_log()
             print("\n--- Next Turn ---\n")
+
     except KeyboardInterrupt:
         print("\n👋 Conversation terminated by user.")
         generate_html_log()
+
+
+def save_conversation_log():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    input_log_path = os.path.join(LOG_DIR, f"user_{timestamp}.wav")
+    output_log_path = os.path.join(LOG_DIR, f"bot_{timestamp}.mp3")
+    shutil.copyfile(OUTPUT_FILE, input_log_path)
+    shutil.copyfile("audio/edge_output.mp3", output_log_path)
 
 
 def generate_html_log():
