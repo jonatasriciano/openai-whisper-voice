@@ -6,7 +6,7 @@ from app.config.settings import OUTPUT_FILE
 from app.modules.audio_utils import play_beep
 from app.modules.interruptible_tts import play_audio_interruptible
 from app.modules.recorder import record_audio
-from app.modules.responder import respond_and_speak
+from app.modules.responder import respond_and_speak_stream as respond_and_speak
 from app.modules.transcriber import transcribe_with_whisper
 
 LOG_DIR = "logs"

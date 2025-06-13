@@ -17,7 +17,6 @@ if not OPENAI_API_KEY:
     raise ValueError("Missing OPENAI_API_KEY in .env")
 
 openai = OpenAI(api_key=OPENAI_API_KEY)
-ASSISTANT_ID = OPENAI_ASSISTANT_ID
 
 #asistant_name
 ASSISTANT_NAME = os.getenv("ASSISTANT_NAME", "AI Secretary")
