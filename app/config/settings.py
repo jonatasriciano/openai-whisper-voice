@@ -82,5 +82,5 @@ TTS_PROVIDER = os.getenv("TTS_PROVIDER", "edge")  # Options: "edge", "elevenlabs
 
 # ElevenLabs configuration
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
-ELEVEN_VOICE_ID = os.getenv("ELEVEN_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")  # Default voice
-
+ELEVEN_VOICE_ID = os.getenv("ELEVEN_VOICE_ID", "3liN8q8YoeB9Hk6AboKe")  
+ELEVEN_VOICE_MODEL = "eleven_flashy_v2.5"
